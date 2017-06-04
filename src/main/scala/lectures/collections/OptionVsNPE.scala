@@ -31,11 +31,11 @@ class ResourceException extends Exception("Ресурс не отвечает")
 trait FailUtil {
   val failRate: Double
 
-  def timeToFail = Math.random() > failRate
+  def timeToFail: Boolean = Math.random() > failRate
 }
 
 object ResourceProducer extends FailUtil {
-  def produce = if (timeToFail) null else Resource(Random.alphanumeric.take(10).mkString)
+  def produce: Resource = if (timeToFail) null else Resource(Random.alphanumeric.take(10).mkString)
 
   val failRate: Double = 0.3
 }
@@ -43,16 +43,15 @@ object ResourceProducer extends FailUtil {
 object ConnectionProducer extends FailUtil {
   val failRate: Double = 0.5
 
-  def produce(resource: Resource) = if (timeToFail) null else Connection(resource)
+  def produce(resource: Resource): Connection = if (timeToFail) null else Connection(resource)
 
-  def result(connection: Connection) = if (timeToFail) null else connection.resource.name
+  def result(connection: Connection): String = if (timeToFail) null else connection.resource.name
 }
 
 case class Connection(resource: Resource) {
   private val defaultResult = "something went wrong!"
 
-  //ConnectionProducer.result(this)
-  def result(): String = ???
+  def result(): String = Option(ConnectionProducer.result(this)) getOrElse defaultResult
 }
 
 case class Resource(name: String)
@@ -61,11 +60,21 @@ object OptionVsNPE extends App {
 
   def businessLogic: String = try {
     // ResourceProducer
-    val result: String = ???
+
+    def getResult(resource: Resource): String = Option(ConnectionProducer.produce(resource)) match {
+      case None => getResult(resource)
+      case Some(connection) => connection.result()
+    }
+
+    val result: String = Option(ResourceProducer.produce) match {
+      case None => throw new ResourceException
+      case Some(resource) => getResult(resource)
+    }
     println(result)
     result
   } catch {
-    case e: ResourceException => ???
+    case e: ResourceException => println("Try again with new resource")
+      businessLogic
   }
 
   businessLogic

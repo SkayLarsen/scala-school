@@ -1,6 +1,6 @@
 package lectures.matching
 
-import lectures.matching.SortingStuff.{Book, StuffBox, Watches}
+import lectures.matching.SortingStuff._
 import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{Matchers, WordSpec}
@@ -32,9 +32,11 @@ import scala.util.Random
 class SortingStuffGeneratorBasedTest extends WordSpec with Matchers with PropertyChecks {
 
   val cheepWatchGen: Gen[Watches] = Gen.zip(Gen.choose(0f, 1000f), Gen.alphaStr).map(w => Watches(w._2, w._1))
-  val bookGenerator = Gen.alphaStr.map(name => Book(name, Random.nextBoolean()))
-  val interestingBookGen = bookGenerator.filter(_.isInteresting)
-
+  val bookGenerator: Gen[Book] = Gen.alphaStr.map(name => Book(name, Random.nextBoolean()))
+  val interestingBookGen: Gen[Book] = bookGenerator.filter(_.isInteresting)
+  val knifeGenerator: Gen[Option[Stuff]] = Gen.option(Knife)
+  val bootsGenerator: Gen[Boots] = Gen.zip(Gen.oneOf(Gen.const("Converse"), Gen.const("Adidas"), Gen.alphaStr),
+    Gen.choose(40, 50)).map(b => Boots(b._1, b._2))
   // Override configuration if you need
   implicit override val generatorDrivenConfig =
     PropertyCheckConfig(minSize = 10, maxSize = 20)
@@ -59,7 +61,7 @@ class SortingStuffGeneratorBasedTest extends WordSpec with Matchers with Propert
 
   "Sort stuff" should {
     "return collections" which {
-      "total size is equal to item amount" in pendingUntilFixed{
+      "total size is equal to item amount" in {
         val ms = generatorDrivenConfig.minSuccessful
 
         val books = (1 to ms) flatMap { _ => interestingBookGen.sample }
@@ -72,11 +74,24 @@ class SortingStuffGeneratorBasedTest extends WordSpec with Matchers with Propert
       }
     }
     "find knife" which {
-      "was occasionally disposed" in pending
+      "was occasionally disposed" in {
+        knifeGenerator.sample.get match {
+          case Some(k) =>
+            findMyKnife(SortingStuff.sortJunk(List(k))) shouldBe true
+          case None =>
+            findMyKnife(SortingStuff.sortJunk(List())) shouldBe false
+        }
+      }
     }
 
     "put boots in a proper place" when {
-      "boots were produced by Converse or Adidas" in pending
+      "boots were produced by Converse or Adidas" in {
+        val ms = generatorDrivenConfig.minSuccessful
+        val allBoots = (1 to ms) flatMap { _ => bootsGenerator.sample }
+        val coolBoots = allBoots filter (b => (b.brand == "Converse") || (b.brand == "Adidas"))
+        val StuffBox(_, _, boots, _) = SortingStuff.sortJunk(Random.shuffle(allBoots).toList)
+        boots should have size coolBoots.size
+      }
     }
   }
 }

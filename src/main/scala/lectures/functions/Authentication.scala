@@ -26,18 +26,22 @@ import scala.util.Random
   *
   * Что-либо еще, кроме знаков ???, заменять нельзя
   */
-object Authentication extends App {
+object Authentication {
 
   import AuthenticationData._
 
-// val authByCard: PartialFunction[???, ???] = ???
-
-// val authByLP: PartialFunction[???, ???] = ???
-
-  val authenticated: List[Option[User]] = for (user <- testUsers) yield {
-    ???
+  val authByCard: PartialFunction[User, User] = {
+    case user: CardUser if registeredCards.contains(user.credentials) => user
   }
 
- authenticated.flatten foreach println
+  val authByLP: PartialFunction[User, User] = {
+    case user: LPUser if registeredLoginAndPassword.contains(user.credentials) => user
+  }
+
+  val authenticated: List[Option[User]] = for (user <- testUsers) yield {
+    (authByCard orElse authByLP).lift(user)
+  }
+
+  authenticated.flatten foreach println
 
 }

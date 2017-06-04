@@ -6,11 +6,11 @@ package lectures.functions
   * Результатом сравнения будет массив, содержащий слова, принадлежащие обоим массивам
   * В данном случа результатом будет массив, содержащий 2 элемента Array("Клара", "Карла")
   *
-  * С помощью Thread.sleep имитируется прододжительное вычисление
+  * С помощью Thread.sleep имитируется продолжительное вычисление
   */
 trait Data {
   val filterData = "Клара у Карла украла корралы, Карл у Клары украл кларнет"
-  val dataArray = "Клара Цеткин обожала Карла Маркса".split(" ")
+  val dataArray: Array[String] = "Клара Цеткин обожала Карла Маркса".split(" ")
 }
 
 object Computation extends App with Data {
@@ -39,14 +39,20 @@ object Computation extends App with Data {
   *
   * Какой тип имеет partiallyAppliedCurriedFunction - ?
   */
-object CurriedComputation extends App with Data {
+object CurriedComputation extends Data {
 
-  def curriedComputation(filterData: String)(dataProducer: Array[String]): Array[String] = ???
+  def curriedComputation(filterData: String)(dataProducer: Array[String]): Array[String] = {
+    Thread.sleep(10)
+    val filterArray = filterData.split(" ")
+    Thread.sleep(100)
+    filterArray.filter(dataItem => dataProducer.contains(dataItem))
+  }
 
-  val partiallyAppliedCurriedFunction = ???
 
-  //val result = partiallyAppliedCurriedFunction(dataArray)
-  //result.foreach(println)
+  val partiallyAppliedCurriedFunction: (Array[String]) => Array[String] = curriedComputation(filterData)
+
+  val result: Array[String] = partiallyAppliedCurriedFunction(dataArray)
+  result.foreach(println)
 }
 
 /**
@@ -54,12 +60,19 @@ object CurriedComputation extends App with Data {
   *
   * При этом постарайтесь минимизировать количество разбиений строки filterData на отдельные слова.
   */
-object FunctionalComputation extends App with Data {
+object FunctionalComputation extends Data {
 
-  def functionalComputation(filterData: String): (Array[String]) => Array[String] = ???
+  def functionalComputation(filterData: String): (Array[String]) => Array[String] = {
+    Thread.sleep(10)
+    val filterArray = filterData.split(" ")
+    (dataProducer: Array[String]) => {
+      Thread.sleep(100)
+      filterArray.filter(dataItem => dataProducer.contains(dataItem))
+    }
+  }
 
-  val filterApplied = functionalComputation(???)
+  val filterApplied: (Array[String]) => Array[String] = functionalComputation(filterData)
 
-  val result = filterApplied(???)
+  val result: Array[String] = filterApplied(dataArray)
   result.foreach(println)
 }
